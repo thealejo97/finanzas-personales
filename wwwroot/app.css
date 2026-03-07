@@ -770,3 +770,66 @@ color:#334155;
 .subcategoria{
 padding-left:25px;
 }
+
+.page-shell{
+padding:30px;
+}
+
+.page-header{
+margin-bottom:30px;
+}
+
+.top-kpis{
+display:flex;
+gap:20px;
+flex-wrap:wrap;
+margin-bottom:30px;
+}
+
+.kpi-card{
+background:white;
+padding:18px;
+border-radius:10px;
+box-shadow:0 4px 14px rgba(0,0,0,0.06);
+min-width:160px;
+}
+
+.panel{
+background:white;
+padding:25px;
+margin-top:25px;
+border-radius:12px;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+.field label{
+font-weight:600;
+margin-bottom:6px;
+display:block;
+}
+
+.input{
+width:100%;
+padding:10px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+.progress-bar{
+height:10px;
+background:#eee;
+border-radius:6px;
+overflow:hidden;
+margin-bottom:5px;
+}
+
+.progress-fill{
+height:100%;
+background:#22c55e;
+}

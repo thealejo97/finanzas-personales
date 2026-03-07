@@ -361,4 +361,47 @@ public async Task<decimal> ObtenerTotalInversionesAsync()
     return (await _db.Inversiones.ToListAsync())
         .Sum(x => x.ValorActual);
 }
+public decimal CalcularValorEstimado(Inversion inv)
+{
+    if (inv.TasaEA <= 0)
+        return inv.CapitalInicial;
+
+    var dias = (DateTime.Today - inv.FechaInicio).TotalDays;
+
+    var tasaDiaria = Math.Pow(1 + (double)(inv.TasaEA / 100), 1.0 / 365) - 1;
+
+    var valor = inv.CapitalInicial * (decimal)Math.Pow(1 + tasaDiaria, dias);
+
+    return decimal.Round(valor, 0);
+}
+
+
+public decimal CalcularDiferenciaRealVsEstimado(Inversion inv)
+{
+    var estimado = CalcularValorEstimado(inv);
+
+    return inv.ValorActual - estimado;
+}
+public async Task EliminarInversionAsync(int id)
+{
+    var inv = await _db.Inversiones.FindAsync(id);
+
+    if (inv != null)
+    {
+        _db.Inversiones.Remove(inv);
+        await _db.SaveChangesAsync();
+    }
+}
+
+public async Task EliminarAhorroAsync(int id)
+{
+    var ahorro = await _db.Ahorros.FindAsync(id);
+
+    if (ahorro != null)
+    {
+        _db.Ahorros.Remove(ahorro);
+        await _db.SaveChangesAsync();
+    }
+}
+
 }

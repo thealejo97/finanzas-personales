@@ -4,76 +4,252 @@
 @using FinanzasApp.Utils
 @inject FinanzasApp.Services.FinanzasService FinanzasService
 
-<PageTitle>Ahorros e inversiones</PageTitle>
+<PageTitle>Patrimonio</PageTitle>
 
 @if (cargando)
 {
-<div>Cargando módulo...</div>
+<div class="loading-card">Cargando portafolio...</div>
 }
 else
 {
 
-<div class="dashboard">
+<div class="page-shell">
 
-<h1>Ahorros e inversiones</h1>
+<div class="page-header">
+<h1>Patrimonio</h1>
+<p>Ahorros, inversiones y crecimiento de capital</p>
+</div>
 
-<p>Gestiona liquidez, capital invertido y crecimiento.</p>
 
-<div class="kpi-grid">
+<!-- KPIs -->
 
-<div class="kpi">
-<span>Total ahorros</span>
+<div class="top-kpis">
+
+<div class="kpi-card">
+<span>Ahorros</span>
 <strong>@MoneyFormatter.Formatear(totalAhorros)</strong>
 </div>
 
-<div class="kpi">
-<span>Total inversiones</span>
+<div class="kpi-card">
+<span>Inversiones</span>
 <strong>@MoneyFormatter.Formatear(totalInversiones)</strong>
 </div>
 
-<div class="kpi">
-<span>Patrimonio</span>
+<div class="kpi-card">
+<span>Patrimonio total</span>
 <strong>@MoneyFormatter.Formatear(totalAhorros + totalInversiones)</strong>
 </div>
 
-<div class="kpi">
-<span>% ahorros</span>
-<strong>@PorcentajeAhorros().ToString("N1") %</strong>
+<div class="kpi-card">
+<span>% ahorro</span>
+<strong>@PorcentajeAhorros().ToString("N1")%</strong>
 </div>
 
-<div class="kpi">
-<span>% inversiones</span>
-<strong>@PorcentajeInversiones().ToString("N1") %</strong>
+<div class="kpi-card">
+<span>% inversión</span>
+<strong>@PorcentajeInversiones().ToString("N1")%</strong>
 </div>
 
 </div>
 
+
+<!-- AHORROS -->
 
 <div class="panel">
 
-<h3>Nuevo ahorro</h3>
+<h3>Ahorros (liquidez)</h3>
 
-<input placeholder="Nombre"
-       class="input"
-       @bind="nuevoAhorro.Nombre" />
+<table class="budget-table">
 
-<input placeholder="Valor actual"
-       type="number"
-       class="input"
-       @bind="nuevoAhorro.ValorActual" />
+<thead>
+<tr>
+<th>Cuenta</th>
+<th>Tipo</th>
+<th>Valor</th>
+<th>Meta</th>
+<th>Progreso</th>
+<th></th>
+</tr>
+</thead>
 
-<input placeholder="Meta"
-       type="number"
-       class="input"
-       @bind="nuevoAhorro.MetaObjetivo" />
+<tbody>
 
-<select class="input" @bind="nuevoAhorro.Tipo">
+@foreach (var ahorro in ahorros)
+{
+
+var porcentaje = FinanzasService.CalcularPorcentajeMetaAhorro(ahorro);
+
+<tr>
+
+<td>@ahorro.Nombre</td>
+
+<td>@ahorro.Tipo</td>
+
+<td>@MoneyFormatter.Formatear(ahorro.ValorActual)</td>
+
+<td>@MoneyFormatter.Formatear(ahorro.MetaObjetivo)</td>
+
+<td>
+
+<div class="progress-bar">
+<div class="progress-fill" style="width:@porcentaje%"></div>
+</div>
+
+@porcentaje %
+
+</td>
+
+<td>
+
+<button class="btn-danger"
+        @onclick="() => EliminarAhorro(ahorro.Id)">
+
+Eliminar
+
+</button>
+
+</td>
+
+</tr>
+
+}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<!-- INVERSIONES -->
+
+<div class="panel">
+
+<h3>Inversiones</h3>
+
+<table class="budget-table">
+
+<thead>
+<tr>
+<th>Activo</th>
+<th>Tipo</th>
+<th>Capital inicial</th>
+<th>Valor actual</th>
+<th>Estimado</th>
+<th>Diferencia</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody>
+
+@foreach (var inv in inversiones)
+{
+
+var estimado = FinanzasService.CalcularValorEstimado(inv);
+var diferencia = FinanzasService.CalcularDiferenciaRealVsEstimado(inv);
+
+<tr>
+
+<td>@inv.Nombre</td>
+
+<td>@inv.Tipo</td>
+
+<td>@MoneyFormatter.Formatear(inv.CapitalInicial)</td>
+
+<td>@MoneyFormatter.Formatear(inv.ValorActual)</td>
+
+<td>@MoneyFormatter.Formatear(estimado)</td>
+
+<td>
+
+@if (diferencia >= 0)
+{
+<span style="color:green">
++@MoneyFormatter.Formatear(diferencia)
+</span>
+}
+else
+{
+<span style="color:red">
+@MoneyFormatter.Formatear(diferencia)
+</span>
+}
+
+</td>
+
+<td>
+
+<button class="btn-danger"
+        @onclick="() => EliminarInversion(inv.Id)">
+
+Eliminar
+
+</button>
+
+</td>
+
+</tr>
+
+}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<!-- CREAR AHORRO -->
+
+<div class="panel">
+
+<h3>Registrar ahorro</h3>
+
+<div class="form-grid">
+
+<div class="field">
+<label>Nombre</label>
+<input class="input"
+       placeholder="Ej: Cajita Nubank"
+       @bind="nuevoAhorro.Nombre"/>
+</div>
+
+<div class="field">
+<label>Tipo</label>
+
+<select class="input"
+        @bind="nuevoAhorro.Tipo">
 
 <option>Cajita</option>
 <option>Cuenta alto rendimiento</option>
-<option>Fondo emergencia</option>
+<option>Fondo de emergencia</option>
+<option>Cuenta ahorro bancaria</option>
+<option>Ahorro objetivo</option>
 
 </select>
+
+</div>
+
+<div class="field">
+<label>Valor actual</label>
+<input type="number"
+       class="input"
+       @bind="nuevoAhorro.ValorActual"/>
+</div>
+
+<div class="field">
+<label>Meta objetivo</label>
+<input type="number"
+       class="input"
+       @bind="nuevoAhorro.MetaObjetivo"/>
+</div>
+
+</div>
+
+<br/>
 
 <button class="btn-primary"
         @onclick="GuardarAhorro">
@@ -85,32 +261,71 @@ Guardar ahorro
 </div>
 
 
+
+<!-- CREAR INVERSION -->
+
 <div class="panel">
 
-<h3>Nueva inversión</h3>
+<h3>Registrar inversión</h3>
 
-<input placeholder="Nombre"
-       class="input"
-       @bind="nuevaInversion.Nombre" />
+<div class="form-grid">
+
+<div class="field">
+<label>Nombre</label>
+<input class="input"
+       placeholder="Ej: FIC Tyba"
+       @bind="nuevaInversion.Nombre"/>
+</div>
+
+<div class="field">
+<label>Tipo</label>
 
 <select class="input"
         @bind="nuevaInversion.Tipo">
 
 <option>CDT</option>
 <option>FIC</option>
-<option>Accion</option>
+<option>Acción</option>
+<option>ETF</option>
+<option>Bonos</option>
+<option>Cripto</option>
 
 </select>
 
-<input placeholder="Capital inicial"
-       type="number"
-       class="input"
-       @bind="nuevaInversion.CapitalInicial" />
+</div>
 
-<input placeholder="Tasa EA"
-       type="number"
+<div class="field">
+<label>Capital inicial</label>
+<input type="number"
        class="input"
-       @bind="nuevaInversion.TasaEA" />
+       @bind="nuevaInversion.CapitalInicial"/>
+</div>
+
+<div class="field">
+<label>Valor actual</label>
+<input type="number"
+       class="input"
+       @bind="nuevaInversion.ValorActual"/>
+</div>
+
+<div class="field">
+<label>Tasa EA (%)</label>
+<input type="number"
+       step="0.01"
+       class="input"
+       @bind="nuevaInversion.TasaEA"/>
+</div>
+
+<div class="field">
+<label>Fecha inicio</label>
+<input type="date"
+       class="input"
+       @bind="nuevaInversion.FechaInicio"/>
+</div>
+
+</div>
+
+<br/>
 
 <button class="btn-primary"
         @onclick="GuardarInversion">
@@ -118,113 +333,6 @@ Guardar ahorro
 Guardar inversión
 
 </button>
-
-</div>
-
-
-<div class="panel">
-
-<h3>Ahorros</h3>
-
-<table class="budget-table">
-
-<thead>
-<tr>
-<th>Nombre</th>
-<th>Valor</th>
-<th>Meta</th>
-<th>%</th>
-</tr>
-</thead>
-
-<tbody>
-
-@foreach (var ahorro in ahorros)
-{
-
-<tr>
-
-<td>@ahorro.Nombre</td>
-
-<td>@MoneyFormatter.Formatear(ahorro.ValorActual)</td>
-
-<td>@MoneyFormatter.Formatear(ahorro.MetaObjetivo)</td>
-
-<td>
-
-@FinanzasService
-.CalcularPorcentajeMetaAhorro(ahorro)
-.ToString("N1") %
-
-</td>
-
-</tr>
-
-}
-
-</tbody>
-
-</table>
-
-</div>
-
-
-<div class="panel">
-
-<h3>Inversiones</h3>
-
-<table class="budget-table">
-
-<thead>
-
-<tr>
-<th>Nombre</th>
-<th>Tipo</th>
-<th>Valor</th>
-<th>Rend mensual</th>
-<th>Valor 12m</th>
-</tr>
-
-</thead>
-
-<tbody>
-
-@foreach (var inv in inversiones)
-{
-
-<tr>
-
-<td>@inv.Nombre</td>
-
-<td>@inv.Tipo</td>
-
-<td>@MoneyFormatter.Formatear(inv.ValorActual)</td>
-
-<td>
-
-@MoneyFormatter.Formatear(
-FinanzasService
-.CalcularRendimientoEstimadoMensual(inv)
-)
-
-</td>
-
-<td>
-
-@MoneyFormatter.Formatear(
-FinanzasService
-.CalcularValorProyectado12Meses(inv)
-)
-
-</td>
-
-</tr>
-
-}
-
-</tbody>
-
-</table>
 
 </div>
 
@@ -246,7 +354,8 @@ Tipo = "Cajita"
 
 Inversion nuevaInversion = new()
 {
-Tipo = "CDT"
+Tipo = "CDT",
+FechaInicio = DateTime.Today
 };
 
 decimal totalAhorros;
@@ -273,8 +382,10 @@ cargando = false;
 async Task GuardarAhorro()
 {
 
-await FinanzasService
-.GuardarAhorroAsync(nuevoAhorro);
+if (string.IsNullOrWhiteSpace(nuevoAhorro.Nombre))
+return;
+
+await FinanzasService.GuardarAhorroAsync(nuevoAhorro);
 
 nuevoAhorro = new AhorroMeta
 {
@@ -288,12 +399,15 @@ await CargarTodo();
 async Task GuardarInversion()
 {
 
-await FinanzasService
-.GuardarInversionAsync(nuevaInversion);
+if (string.IsNullOrWhiteSpace(nuevaInversion.Nombre))
+return;
+
+await FinanzasService.GuardarInversionAsync(nuevaInversion);
 
 nuevaInversion = new Inversion
 {
-Tipo = "CDT"
+Tipo = "CDT",
+FechaInicio = DateTime.Today
 };
 
 await CargarTodo();
@@ -320,6 +434,18 @@ if (total == 0) return 0;
 
 return totalInversiones / total * 100;
 
+}
+
+async Task EliminarInversion(int id)
+{
+await FinanzasService.EliminarInversionAsync(id);
+await CargarTodo();
+}
+
+async Task EliminarAhorro(int id)
+{
+await FinanzasService.EliminarAhorroAsync(id);
+await CargarTodo();
 }
 
 }
