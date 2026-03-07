@@ -1,0 +1,227 @@
+@page "/dashboard"
+@rendermode InteractiveServer
+@using FinanzasApp.Models
+@using FinanzasApp.Utils
+@inject FinanzasApp.Services.FinanzasService FinanzasService
+@inject IJSRuntime JS
+
+<PageTitle>Dashboard financiero</PageTitle>
+
+@if (mes == null)
+{
+<div>Cargando dashboard...</div>
+}
+else
+{
+
+<div class="dashboard">
+
+<h1>Dashboard financiero</h1>
+
+<div class="month-selector">
+
+<button @onclick="MesAnterior">◀</button>
+
+<input type="month"
+value="@mesKey"
+@onchange="CambiarMes" />
+
+<button @onclick="MesSiguiente">▶</button>
+
+</div>
+
+<div class="kpi-grid">
+
+<div class="kpi">
+<span>Ingreso</span>
+<strong>@MoneyFormatter.Formatear(mes.Ingreso)</strong>
+</div>
+
+<div class="kpi">
+<span>Gasto</span>
+<strong>@MoneyFormatter.Formatear(mes.TotalReal)</strong>
+</div>
+
+<div class="kpi">
+<span>Presupuesto</span>
+<strong>@MoneyFormatter.Formatear(mes.TotalPresupuesto)</strong>
+</div>
+
+<div class="kpi">
+<span>Disponible</span>
+<strong>@MoneyFormatter.Formatear(mes.ResultadoMes)</strong>
+</div>
+
+<div class="kpi">
+<span>Ejecución</span>
+<strong>@PorcentajeEjecucion() %</strong>
+</div>
+
+</div>
+
+<div class="panel">
+
+<h3>Presupuesto vs gasto</h3>
+
+<div class="chart-container">
+<canvas id="barChart"></canvas>
+</div>
+
+</div>
+
+<div class="panel">
+
+<h3>Distribución del gasto</h3>
+
+<div class="chart-container">
+<canvas id="pieChart"></canvas>
+</div>
+
+</div>
+
+<div class="panel">
+
+<h3>Insights financieros</h3>
+
+<ul>
+
+@foreach(var insight in GenerarInsights())
+{
+<li>@insight</li>
+}
+
+</ul>
+
+</div>
+
+</div>
+
+}
+
+@code {
+
+MesFinanciero? mes;
+
+string mesKey = DateTime.Today.ToString("yyyy-MM");
+
+bool necesitaRedibujar = true;
+
+protected override async Task OnInitializedAsync()
+{
+mes = await FinanzasService.ObtenerOCrearMesAsync(mesKey);
+}
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+
+if(necesitaRedibujar && mes != null)
+{
+await DibujarGraficos();
+necesitaRedibujar = false;
+}
+
+}
+
+async Task DibujarGraficos()
+{
+
+var categorias = mes.Presupuestos
+.GroupBy(x => x.Categoria.CategoriaPadre.Nombre)
+.Select(g => new {
+Nombre = g.Key,
+Valor = g.Sum(x => x.Real)
+})
+.ToList();
+
+await JS.InvokeVoidAsync(
+"renderPieChart",
+"pieChart",
+categorias.Select(x => x.Nombre).ToArray(),
+categorias.Select(x => x.Valor).ToArray()
+);
+
+await JS.InvokeVoidAsync(
+"renderBarChart",
+"barChart",
+new string[]{"Presupuesto","Gasto"},
+new decimal[]{mes.TotalPresupuesto,mes.TotalReal}
+);
+
+}
+
+async Task CambiarMes(ChangeEventArgs e)
+{
+mesKey = e.Value?.ToString() ?? mesKey;
+
+mes = await FinanzasService.ObtenerOCrearMesAsync(mesKey);
+
+necesitaRedibujar = true;
+
+StateHasChanged();
+}
+
+async Task MesAnterior()
+{
+
+var fecha = DateTime.Parse(mesKey + "-01");
+
+mesKey = fecha.AddMonths(-1).ToString("yyyy-MM");
+
+mes = await FinanzasService.ObtenerOCrearMesAsync(mesKey);
+
+necesitaRedibujar = true;
+
+StateHasChanged();
+
+}
+
+async Task MesSiguiente()
+{
+
+var fecha = DateTime.Parse(mesKey + "-01");
+
+mesKey = fecha.AddMonths(1).ToString("yyyy-MM");
+
+mes = await FinanzasService.ObtenerOCrearMesAsync(mesKey);
+
+necesitaRedibujar = true;
+
+StateHasChanged();
+
+}
+
+decimal PorcentajeEjecucion()
+{
+
+if (mes.TotalPresupuesto == 0) return 0;
+
+return Math.Round((mes.TotalReal / mes.TotalPresupuesto) * 100,2);
+
+}
+
+List<string> GenerarInsights()
+{
+
+var insights = new List<string>();
+
+if (mes.TotalReal > mes.TotalPresupuesto)
+insights.Add("⚠ Has superado tu presupuesto mensual.");
+
+if (mes.TasaAhorro < 10)
+insights.Add("💡 Tu tasa de ahorro es baja.");
+
+if (mes.TasaAhorro > 30)
+insights.Add("🔥 Excelente nivel de ahorro.");
+
+var mayor = mes.Presupuestos
+.OrderByDescending(x => x.Real)
+.FirstOrDefault();
+
+if (mayor != null)
+insights.Add($"📊 Tu mayor gasto es {mayor.Categoria.Nombre}");
+
+return insights;
+
+}
+
+}

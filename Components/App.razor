@@ -2,19 +2,111 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
-    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="FinanzasApp.styles.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet />
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<base href="/" />
+
+<link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+<link rel="stylesheet" href="app.css" />
+<link rel="stylesheet" href="FinanzasApp.styles.css" />
+
+<link rel="icon" type="image/png" href="favicon.png" />
+
+<HeadOutlet />
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+window.charts = {};
+
+window.renderPieChart = (id, labels, data) => {
+
+if (window.charts[id]) {
+window.charts[id].destroy();
+}
+
+const ctx = document.getElementById(id);
+
+window.charts[id] = new Chart(ctx, {
+
+type: 'pie',
+
+data: {
+labels: labels,
+datasets: [{
+data: data,
+backgroundColor:[
+"#4CAF50",
+"#2196F3",
+"#FFC107",
+"#FF5722",
+"#9C27B0",
+"#607D8B"
+]
+}]
+},
+
+options:{
+responsive:true,
+maintainAspectRatio:false,
+plugins:{
+legend:{
+position:"bottom"
+}
+}
+}
+
+});
+
+};
+
+
+window.renderBarChart = (id, labels, data) => {
+
+if (window.charts[id]) {
+window.charts[id].destroy();
+}
+
+const ctx = document.getElementById(id);
+
+window.charts[id] = new Chart(ctx, {
+
+type: 'bar',
+
+data: {
+labels: labels,
+datasets: [{
+data: data,
+backgroundColor:["#2196F3","#FF5722"]
+}]
+},
+
+options:{
+responsive:true,
+maintainAspectRatio:false,
+plugins:{
+legend:{display:false}
+}
+}
+
+});
+
+};
+
+</script>
+
 </head>
 
 <body>
-    <Routes />
-    <script src="_framework/blazor.web.js"></script>
+
+<Routes />
+
+<script src="_framework/blazor.web.js"></script>
+
 </body>
 
 </html>
