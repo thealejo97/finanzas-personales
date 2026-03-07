@@ -23,6 +23,7 @@ using (var scope = app.Services.CreateScope())
 
     var finanzasService = scope.ServiceProvider.GetRequiredService<FinanzasService>();
     await finanzasService.InicializarDatosBaseAsync();
+    await finanzasService.InicializarCategoriasAsync();
 }
 
 if (!app.Environment.IsDevelopment())

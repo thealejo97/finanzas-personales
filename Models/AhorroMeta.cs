@@ -6,6 +6,8 @@ public class AhorroMeta
 
     public string Nombre { get; set; } = "";
 
+    public string Tipo { get; set; } = "";
+
     public decimal ValorActual { get; set; }
 
     public decimal MetaObjetivo { get; set; }
