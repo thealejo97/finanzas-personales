@@ -1,0 +1,167 @@
+@page "/historial"
+@rendermode InteractiveServer
+@using FinanzasApp.Models
+@inject FinanzasApp.Services.FinanzasService FinanzasService
+
+<PageTitle>Histórico financiero</PageTitle>
+
+@if (meses == null)
+{
+    <div class="loading-card">Cargando histórico...</div>
+}
+else
+{
+
+<div class="page-shell">
+
+<div class="page-header">
+
+<div>
+<h1>Histórico financiero</h1>
+<p>Evolución de tus finanzas mes a mes</p>
+</div>
+
+</div>
+
+
+<div class="panel">
+
+<h3>Evolución mensual</h3>
+
+<table class="budget-table">
+
+<thead>
+<tr>
+<th>Mes</th>
+<th>Ingreso</th>
+<th>Presupuesto</th>
+<th>Real</th>
+<th>Resultado</th>
+<th>Ahorro %</th>
+<th>Estado</th>
+</tr>
+</thead>
+
+<tbody>
+
+@foreach (var mes in meses)
+{
+
+<tr>
+
+<td>
+<strong>@mes.MesKey</strong>
+</td>
+
+<td>
+@mes.Ingreso.ToString("N0")
+</td>
+
+<td>
+@mes.TotalPresupuesto.ToString("N0")
+</td>
+
+<td>
+@mes.TotalReal.ToString("N0")
+</td>
+
+<td class="@(mes.ResultadoMes >= 0 ? "text-ok" : "text-warn")">
+@mes.ResultadoMes.ToString("N0")
+</td>
+
+<td>
+@mes.TasaAhorro.ToString("N2") %
+</td>
+
+<td>
+
+@if (mes.EstaCerrado)
+{
+<span class="badge-ok">Cerrado</span>
+}
+else
+{
+<span class="badge-neutral">Abierto</span>
+}
+
+</td>
+
+</tr>
+
+}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+<div class="panel">
+
+<h3>Resumen histórico</h3>
+
+<div class="summary-grid">
+
+<div class="summary-card">
+<span>Total ingresos</span>
+<strong>@TotalIngresos().ToString("N0")</strong>
+</div>
+
+<div class="summary-card">
+<span>Total gastado</span>
+<strong>@TotalGastos().ToString("N0")</strong>
+</div>
+
+<div class="summary-card">
+<span>Resultado acumulado</span>
+<strong>@ResultadoTotal().ToString("N0")</strong>
+</div>
+
+<div class="summary-card">
+<span>Tasa ahorro promedio</span>
+<strong>@AhorroPromedio().ToString("N2") %</strong>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+}
+
+@code {
+
+List<MesFinanciero>? meses;
+
+
+protected override async Task OnInitializedAsync()
+{
+meses = await FinanzasService.ObtenerHistorialAsync();
+}
+
+
+decimal TotalIngresos()
+{
+return meses.Sum(x => x.Ingreso);
+}
+
+decimal TotalGastos()
+{
+return meses.Sum(x => x.TotalReal);
+}
+
+decimal ResultadoTotal()
+{
+return meses.Sum(x => x.ResultadoMes);
+}
+
+decimal AhorroPromedio()
+{
+if (meses.Count == 0) return 0;
+
+return meses.Average(x => x.TasaAhorro);
+}
+
+}

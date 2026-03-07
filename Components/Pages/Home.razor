@@ -1,0 +1,80 @@
+﻿@page "/"
+
+@using FinanzasApp.Models
+@inject FinanzasApp.Services.FinanzasService FinanzasService
+
+<h1 class="mb-4">Dashboard financiero</h1>
+
+@if (resumen == null)
+{
+    <p>Cargando datos...</p>
+}
+else
+{
+    <div class="dashboard-grid">
+
+        <div class="card">
+            <h4>💰 Patrimonio</h4>
+            <h2>@resumen.PatrimonioEstimado.ToString("N0")</h2>
+        </div>
+
+        <div class="card">
+            <h4>💳 Deuda</h4>
+            <h2>@resumen.DeudaTotal.ToString("N0")</h2>
+        </div>
+
+        <div class="card">
+            <h4>🏦 Ahorros</h4>
+            <h2>@resumen.AhorroTotal.ToString("N0")</h2>
+        </div>
+
+        <div class="card">
+            <h4>📈 Inversiones</h4>
+            <h2>@resumen.InversionesTotal.ToString("N0")</h2>
+        </div>
+
+        <div class="card">
+            <h4>📊 Acciones</h4>
+            <h2>@resumen.AccionesTotal.ToString("N0")</h2>
+        </div>
+
+    </div>
+
+    <div class="alert-box mt-4">
+
+        <h4>Alertas y recomendaciones</h4>
+
+        @if (resumen.DeudaTotal > resumen.PatrimonioEstimado * 0.5m)
+        {
+            <p class="alert alert-danger">
+                ⚠ Tu deuda supera el 50% de tu patrimonio.
+            </p>
+        }
+
+        @if (resumen.AhorroTotal < resumen.PatrimonioEstimado * 0.1m)
+        {
+            <p class="alert alert-warning">
+                ⚠ Tu ahorro es menor al 10% del patrimonio.
+            </p>
+        }
+
+        @if (resumen.DeudaTotal == 0)
+        {
+            <p class="alert alert-success">
+                ✔ No tienes deudas registradas.
+            </p>
+        }
+
+    </div>
+}
+
+@code {
+
+    private DashboardResumen? resumen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        resumen = await FinanzasService.ObtenerDashboardAsync();
+    }
+
+}

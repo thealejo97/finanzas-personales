@@ -1,0 +1,269 @@
+@page "/mes"
+@rendermode InteractiveServer
+@using FinanzasApp.Models
+@using FinanzasApp.Utils
+@inject FinanzasApp.Services.FinanzasService FinanzasService
+
+<PageTitle>Presupuesto del mes</PageTitle>
+
+@if (mes == null)
+{
+    <div class="loading-card">Cargando presupuesto...</div>
+}
+else
+{
+
+<div class="page-shell">
+
+<div class="page-header">
+
+<div>
+<h1>Presupuesto del mes</h1>
+<p>Planea tu mes y controla tu ejecución financiera</p>
+</div>
+
+<div class="header-actions">
+<button class="btn-soft" @onclick="CargarMes">Recargar</button>
+<button class="btn-primary" @onclick="Guardar">Guardar</button>
+</div>
+
+</div>
+
+@if (!string.IsNullOrWhiteSpace(mensaje))
+{
+<div class="status-banner">@mensaje</div>
+}
+
+<div class="top-kpis">
+
+<div class="kpi-card">
+<span>Mes</span>
+<strong>@mes.MesKey</strong>
+</div>
+
+<div class="kpi-card">
+<span>Ingreso</span>
+<strong>@MoneyFormatter.Formatear(mes.Ingreso)</strong>
+</div>
+
+<div class="kpi-card">
+<span>Gasto real</span>
+<strong>@MoneyFormatter.Formatear(mes.TotalReal)</strong>
+</div>
+
+<div class="kpi-card">
+<span>Resultado</span>
+<strong>@MoneyFormatter.Formatear(mes.ResultadoMes)</strong>
+</div>
+
+</div>
+
+
+<div class="panel">
+
+<h3>Configuración del mes</h3>
+
+<div class="form-grid">
+
+<div class="field">
+<label>Mes</label>
+
+<div class="month-selector">
+
+<button class="btn-soft" @onclick="MesAnterior">
+◀
+</button>
+
+<input type="month"
+       class="input"
+       value="@mesKey"
+       @onchange="CambiarMes" />
+
+<button class="btn-soft" @onclick="MesSiguiente">
+▶
+</button>
+
+</div>
+
+</div>
+
+<div class="field">
+<label>Ingreso mensual</label>
+
+<input class="input"
+       type="text"
+       value="@MoneyFormatter.Formatear(mes.Ingreso)"
+       @oninput="e => mes.Ingreso = MoneyFormatter.Parsear(e.Value?.ToString())" />
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="panel">
+
+<h3>Presupuesto por categoría</h3>
+
+<table class="budget-table">
+
+<thead>
+<tr>
+<th>Categoría</th>
+<th>Presupuesto</th>
+<th>Real</th>
+<th>Variación</th>
+<th>% ejecución</th>
+</tr>
+</thead>
+
+<tbody>
+
+@foreach (var grupo in mes.Presupuestos
+    .GroupBy(x => x.Categoria.CategoriaPadre.Nombre)
+    .OrderBy(x => x.Key))
+{
+
+<tr class="categoria-grupo">
+<td colspan="5">@grupo.Key</td>
+</tr>
+
+@foreach (var item in grupo.OrderBy(x => x.Categoria.Orden))
+{
+
+<tr>
+
+<td class="subcategoria">
+@item.Categoria.Nombre
+</td>
+
+<td>
+<input class="table-input"
+       type="text"
+       value="@MoneyFormatter.Formatear(item.Presupuesto)"
+       @oninput="e => item.Presupuesto = MoneyFormatter.Parsear(e.Value?.ToString())" />
+</td>
+
+<td>
+<input class="table-input"
+       type="text"
+       value="@MoneyFormatter.Formatear(item.Real)"
+       @oninput="e => item.Real = MoneyFormatter.Parsear(e.Value?.ToString())" />
+</td>
+
+<td>
+@MoneyFormatter.Formatear(item.Real - item.Presupuesto)
+</td>
+
+<td>
+
+@if(item.Presupuesto == 0)
+{
+<span>0%</span>
+}
+else
+{
+<span>@((item.Real / item.Presupuesto * 100).ToString("N2"))%</span>
+}
+
+</td>
+
+</tr>
+
+}
+
+}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+<div class="panel summary">
+
+<h3>Resumen financiero</h3>
+
+<div class="summary-item">
+<span>Total presupuesto</span>
+<strong>@MoneyFormatter.Formatear(mes.TotalPresupuesto)</strong>
+</div>
+
+<div class="summary-item">
+<span>Total real</span>
+<strong>@MoneyFormatter.Formatear(mes.TotalReal)</strong>
+</div>
+
+<div class="summary-item">
+<span>Resultado</span>
+<strong>@MoneyFormatter.Formatear(mes.ResultadoMes)</strong>
+</div>
+
+<div class="summary-item">
+<span>Tasa ahorro</span>
+<strong>@mes.TasaAhorro.ToString("N2")%</strong>
+</div>
+
+</div>
+
+</div>
+
+}
+
+@code {
+
+MesFinanciero? mes;
+
+string mesKey = DateTime.Today.ToString("yyyy-MM");
+
+string mensaje = "";
+
+protected override async Task OnInitializedAsync()
+{
+    await CargarMes();
+}
+
+async Task CargarMes()
+{
+    mes = await FinanzasService.ObtenerOCrearMesAsync(mesKey);
+    mensaje = "";
+}
+
+async Task CambiarMes(ChangeEventArgs e)
+{
+    mesKey = e.Value?.ToString() ?? DateTime.Today.ToString("yyyy-MM");
+    await CargarMes();
+}
+
+async Task MesAnterior()
+{
+    var fecha = DateTime.Parse(mesKey + "-01");
+    fecha = fecha.AddMonths(-1);
+
+    mesKey = fecha.ToString("yyyy-MM");
+
+    await CargarMes();
+}
+
+async Task MesSiguiente()
+{
+    var fecha = DateTime.Parse(mesKey + "-01");
+    fecha = fecha.AddMonths(1);
+
+    mesKey = fecha.ToString("yyyy-MM");
+
+    await CargarMes();
+}
+
+async Task Guardar()
+{
+    if (mes == null) return;
+
+    await FinanzasService.GuardarMesAsync(mes);
+
+    mensaje = "Presupuesto guardado correctamente";
+}
+
+}

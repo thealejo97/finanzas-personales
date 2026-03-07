@@ -1,0 +1,288 @@
+@page "/config-categorias"
+@rendermode InteractiveServer
+@using FinanzasApp.Models
+@using FinanzasApp.Services
+@inject CategoriasService CategoriasService
+
+<PageTitle>Categorías financieras</PageTitle>
+
+<div class="page-shell">
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Categorías financieras</h1>
+            <p class="page-subtitle">Configura categorías principales y subcategorías para el presupuesto mensual.</p>
+        </div>
+
+        <button type="button" class="btn-primary" @onclick="NuevaCategoria">
+            + Nueva categoría
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(mensaje))
+    {
+        <div class="status-banner">
+            @mensaje
+        </div>
+    }
+
+    @if (categorias == null)
+    {
+        <div class="loading-card">Cargando categorías...</div>
+    }
+    else if (!categorias.Any())
+    {
+        <div class="empty-card">
+            No hay categorías configuradas todavía.
+        </div>
+    }
+    else
+    {
+        @foreach (var cat in categorias)
+        {
+            <div class="categoria-card">
+
+                <div class="categoria-header">
+                    @if (editandoId == cat.Id)
+                    {
+                        <div class="edit-grid">
+                            <div class="field">
+                                <label>Nombre</label>
+                                <input class="input" @bind="editando.Nombre" />
+                            </div>
+
+                            <div class="field small-field">
+                                <label>% objetivo</label>
+                                <input class="input" type="number" step="0.01" @bind="editando.PorcentajeObjetivo" />
+                            </div>
+
+                            <div class="field small-field">
+                                <label>Orden</label>
+                                <input class="input" type="number" @bind="editando.Orden" />
+                            </div>
+
+                            <div class="field small-field">
+                                <label>Tipo</label>
+                                <select class="input" @bind="editando.Tipo">
+                                    <option value="Gasto">Gasto</option>
+                                    <option value="Ahorro">Ahorro</option>
+                                    <option value="Ingreso">Ingreso</option>
+                                    <option value="Deuda">Deuda</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="actions-row">
+                            <button type="button" class="btn-primary" @onclick="GuardarEdicion">
+                                Guardar
+                            </button>
+
+                            <button type="button" class="btn-soft" @onclick="CancelarEdicion">
+                                Cancelar
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="categoria-title-wrap">
+                            <h3 class="categoria-title">@cat.Nombre</h3>
+                            <span class="categoria-chip">@cat.PorcentajeObjetivo.ToString("N2")%</span>
+                            <span class="categoria-chip muted">@cat.Tipo</span>
+                        </div>
+
+                        <div class="actions-row">
+                            <button type="button" class="icon-btn" @onclick="() => Editar(cat)">
+                                ✏ Editar
+                            </button>
+
+                            <button type="button" class="btn-soft" @onclick="() => NuevaSubcategoria(cat.Id)">
+                                + Subcategoría
+                            </button>
+
+                            <button type="button" class="icon-btn danger" @onclick="() => Eliminar(cat.Id)">
+                                🗑 Eliminar
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                <div class="subcategoria-section">
+                    <table class="subcategoria-table">
+                        <thead>
+                            <tr>
+                                <th>Subcategoría</th>
+                                <th>% objetivo</th>
+                                <th>Tipo</th>
+                                <th>Orden</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (cat.SubCategorias == null || !cat.SubCategorias.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="empty-row">Sin subcategorías</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var sub in cat.SubCategorias.OrderBy(x => x.Orden))
+                                {
+                                    <tr>
+                                        @if (editandoId == sub.Id)
+                                        {
+                                            <td>
+                                                <input class="input" @bind="editando.Nombre" />
+                                            </td>
+                                            <td>
+                                                <input class="input" type="number" step="0.01" @bind="editando.PorcentajeObjetivo" />
+                                            </td>
+                                            <td>
+                                                <select class="input" @bind="editando.Tipo">
+                                                    <option value="Gasto">Gasto</option>
+                                                    <option value="Ahorro">Ahorro</option>
+                                                    <option value="Ingreso">Ingreso</option>
+                                                    <option value="Deuda">Deuda</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input class="input" type="number" @bind="editando.Orden" />
+                                            </td>
+                                            <td class="actions-cell">
+                                                <button type="button" class="btn-primary" @onclick="GuardarEdicion">
+                                                    Guardar
+                                                </button>
+
+                                                <button type="button" class="btn-soft" @onclick="CancelarEdicion">
+                                                    Cancelar
+                                                </button>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td>@sub.Nombre</td>
+                                            <td>@sub.PorcentajeObjetivo.ToString("N2")%</td>
+                                            <td>@sub.Tipo</td>
+                                            <td>@sub.Orden</td>
+                                            <td class="actions-cell">
+                                                <button type="button" class="icon-btn" @onclick="() => Editar(sub)">
+                                                    ✏
+                                                </button>
+
+                                                <button type="button" class="icon-btn danger" @onclick="() => Eliminar(sub.Id)">
+                                                    🗑
+                                                </button>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Categoria>? categorias;
+    private Categoria editando = new();
+    private int? editandoId;
+    private string mensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        categorias = await CategoriasService.ObtenerCategoriasAsync();
+        mensaje = "";
+    }
+
+    private async Task NuevaCategoria()
+    {
+        var nueva = new Categoria
+        {
+            Nombre = "Nueva categoría",
+            PorcentajeObjetivo = 0,
+            Orden = categorias?.Count + 1 ?? 1,
+            Tipo = "Gasto"
+        };
+
+        await CategoriasService.GuardarCategoriaAsync(nueva);
+        await Cargar();
+        mensaje = "Categoría creada.";
+    }
+
+    private async Task NuevaSubcategoria(int padreId)
+    {
+        var sub = new Categoria
+        {
+            Nombre = "Nueva subcategoría",
+            CategoriaPadreId = padreId,
+            PorcentajeObjetivo = 0,
+            Orden = 1,
+            Tipo = "Gasto"
+        };
+
+        await CategoriasService.GuardarCategoriaAsync(sub);
+        await Cargar();
+        mensaje = "Subcategoría creada.";
+    }
+
+    private void Editar(Categoria categoria)
+    {
+        editandoId = categoria.Id;
+
+        editando = new Categoria
+        {
+            Id = categoria.Id,
+            Nombre = categoria.Nombre,
+            CategoriaPadreId = categoria.CategoriaPadreId,
+            Orden = categoria.Orden,
+            PorcentajeObjetivo = categoria.PorcentajeObjetivo,
+            Tipo = categoria.Tipo
+        };
+
+        mensaje = "";
+    }
+
+    private async Task GuardarEdicion()
+    {
+        if (editandoId == null)
+            return;
+
+        await CategoriasService.GuardarCategoriaAsync(editando);
+
+        editandoId = null;
+        editando = new Categoria();
+
+        await Cargar();
+        mensaje = "Categoría actualizada correctamente.";
+    }
+
+    private void CancelarEdicion()
+    {
+        editandoId = null;
+        editando = new Categoria();
+        mensaje = "Edición cancelada.";
+    }
+
+    private async Task Eliminar(int id)
+    {
+        await CategoriasService.EliminarCategoriaAsync(id);
+
+        if (editandoId == id)
+        {
+            editandoId = null;
+            editando = new Categoria();
+        }
+
+        await Cargar();
+        mensaje = "Categoría eliminada.";
+    }
+}

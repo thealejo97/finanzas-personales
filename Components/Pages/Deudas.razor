@@ -1,0 +1,160 @@
+@page "/deudas"
+@rendermode InteractiveServer
+@using FinanzasApp.Models
+@inject FinanzasApp.Services.FinanzasService FinanzasService
+
+<h1 class="mb-4">Deudas</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5>Nueva deuda</h5>
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label class="form-label">Nombre</label>
+                <input class="form-control" @bind="nuevaDeuda.Nombre"/>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Saldo</label>
+                <input class="form-control" type="number" @bind="nuevaDeuda.SaldoActual"/>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Tipo tasa</label>
+                <select class="form-select" @bind="nuevaDeuda.TipoTasa">
+                    <option>EA</option>
+                    <option>Mensual</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Tasa</label>
+                <input class="form-control" type="number" @bind="nuevaDeuda.Tasa"/>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Prioridad</label>
+                <input class="form-control" type="number" @bind="nuevaDeuda.PrioridadManual"/>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Pago mínimo</label>
+                <input class="form-control" type="number" @bind="nuevaDeuda.PagoMinimo"/>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Pago objetivo</label>
+                <input class="form-control" type="number" @bind="nuevaDeuda.PagoObjetivo"/>
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary" @onclick="Guardar">
+                    Guardar deuda
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@if (deudas == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <h5 class="mb-3">Listado de deudas</h5>
+
+            <table class="table table-striped">
+
+                <thead>
+                    <tr>
+                        <th>Deuda</th>
+                        <th>Saldo</th>
+                        <th>Interés mensual</th>
+                        <th>Pago mínimo</th>
+                        <th>Pago objetivo</th>
+                        <th>Meses salida</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var deuda in deudas)
+                    {
+                        <tr>
+
+                            <td>@deuda.Nombre</td>
+
+                            <td>
+                                @deuda.SaldoActual.ToString("N0")
+                            </td>
+
+                            <td>
+                                @FinanzasService.CalcularInteresMensualDeuda(deuda).ToString("N0")
+                            </td>
+
+                            <td>
+                                @deuda.PagoMinimo.ToString("N0")
+                            </td>
+
+                            <td>
+                                @deuda.PagoObjetivo.ToString("N0")
+                            </td>
+
+                            <td>
+                                @FinanzasService.CalcularMesesSalidaDeuda(deuda)
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+            <hr/>
+
+            <h5>
+                Total deuda:
+                @deudas.Sum(x => x.SaldoActual).ToString("N0")
+            </h5>
+
+        </div>
+    </div>
+
+}
+
+@code {
+
+    private List<Deuda>? deudas;
+
+    private Deuda nuevaDeuda = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        deudas = await FinanzasService.ObtenerDeudasOrdenadasAsync();
+    }
+
+    private async Task Guardar()
+    {
+        await FinanzasService.GuardarDeudaAsync(nuevaDeuda);
+
+        nuevaDeuda = new Deuda();
+
+        await Cargar();
+    }
+
+}

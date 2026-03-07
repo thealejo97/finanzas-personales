@@ -1,0 +1,97 @@
+
+/* SIDEBAR */
+
+.sidebar {
+    width: 240px;
+    background: linear-gradient(180deg,#0f172a,#1e293b);
+    color: white;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 22px 16px;
+
+    box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+}
+
+/* HEADER */
+
+.sidebar-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    font-size:20px;
+    font-weight:700;
+
+    margin-bottom:30px;
+}
+
+.logo-icon{
+    font-size:26px;
+}
+
+.logo-text{
+    letter-spacing:0.5px;
+}
+
+/* MENU */
+
+.sidebar-menu{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+}
+
+/* LINKS */
+
+.sidebar a{
+    text-decoration:none;
+}
+
+/* ITEM */
+
+.menu-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    padding:12px 14px;
+
+    border-radius:10px;
+
+    color:#cbd5f5 !important;
+
+    font-size:15px;
+    font-weight:500;
+
+    transition:all .2s ease;
+}
+
+/* ICON */
+
+.menu-icon{
+    font-size:18px;
+}
+
+/* HOVER */
+
+.menu-item:hover{
+    background:#1e293b;
+    color:white !important;
+}
+
+/* ACTIVE */
+
+.menu-item.active{
+    background:#2563eb;
+    color:white !important;
+    font-weight:600;
+}
+
+/* CONTENT */
+
+.main-content{
+    flex:1;
+    padding:30px;
+}
