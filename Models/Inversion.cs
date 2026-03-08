@@ -4,6 +4,10 @@ public class Inversion
 {
     public int Id { get; set; }
 
+    public int CategoriaId { get; set; }
+
+    public Categoria Categoria { get; set; } = null!;
+
     public string Nombre { get; set; } = "";
 
     public string Tipo { get; set; } = "";
@@ -14,5 +18,5 @@ public class Inversion
 
     public decimal TasaEA { get; set; }
 
-    public DateTime FechaInicio { get; set; } = DateTime.Today;
+    public DateTime FechaInicio { get; set; }
 }

@@ -62,11 +62,8 @@ public class FinanzasDbContext : DbContext
 
             new Categoria { Id = 8, Nombre = "Deudas" },
             new Categoria { Id = 9, Nombre = "Tarjeta Visa", CategoriaPadreId = 8 },
-            new Categoria { Id = 10, Nombre = "Credito carro", CategoriaPadreId = 8 },
+            new Categoria { Id = 10, Nombre = "Credito carro", CategoriaPadreId = 8 }
 
-            new Categoria { Id = 11, Nombre = "Ahorro" },
-            new Categoria { Id = 12, Nombre = "Fondo emergencia", CategoriaPadreId = 11 },
-            new Categoria { Id = 13, Nombre = "Inversion", CategoriaPadreId = 11 }
 
             );
         modelBuilder.Entity<MesFinanciero>()

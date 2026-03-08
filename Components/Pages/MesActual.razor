@@ -262,8 +262,8 @@ async Task Guardar()
     if (mes == null) return;
 
     await FinanzasService.GuardarMesAsync(mes);
+    await CargarMes();
 
     mensaje = "Presupuesto guardado correctamente";
 }
-
 }

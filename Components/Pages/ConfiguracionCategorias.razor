@@ -218,53 +218,74 @@
         mensaje = "Categoría creada.";
     }
 
-    private async Task NuevaSubcategoria(int padreId)
+
+private async Task NuevaSubcategoria(int padreId)
+{
+    var padre = await CategoriasService.ObtenerPorIdAsync(padreId);
+
+    if (padre == null)
+        return;
+
+    bool esAhorro = padre.EsAhorro || padre.Tipo == "Ahorro";
+    bool esInversion = padre.EsInversion || padre.Tipo == "Inversion";
+
+    var sub = new Categoria
     {
-        var sub = new Categoria
-        {
-            Nombre = "Nueva subcategoría",
-            CategoriaPadreId = padreId,
-            PorcentajeObjetivo = 0,
-            Orden = 1,
-            Tipo = "Gasto"
-        };
+        Nombre = "Nueva subcategoría",
+        CategoriaPadreId = padreId,
+        PorcentajeObjetivo = 0,
+        Orden = 1,
+        Tipo = esAhorro ? "Ahorro" : esInversion ? "Inversion" : padre.Tipo,
+        EsAhorro = esAhorro,
+        EsInversion = esInversion,
+        ActivoNombre = "Nueva subcategoría"
+    };
 
-        await CategoriasService.GuardarCategoriaAsync(sub);
-        await Cargar();
-        mensaje = "Subcategoría creada.";
-    }
+    await CategoriasService.GuardarCategoriaAsync(sub);
+    await Cargar();
 
-    private void Editar(Categoria categoria)
+    mensaje = "Subcategoría creada.";
+}
+
+
+private void Editar(Categoria categoria)
+{
+    editandoId = categoria.Id;
+
+    editando = new Categoria
     {
-        editandoId = categoria.Id;
+        Id = categoria.Id,
+        Nombre = categoria.Nombre,
+        CategoriaPadreId = categoria.CategoriaPadreId,
+        Orden = categoria.Orden,
+        PorcentajeObjetivo = categoria.PorcentajeObjetivo,
+        Tipo = categoria.Tipo,
+        EsAhorro = categoria.EsAhorro,
+        EsInversion = categoria.EsInversion,
+        ActivoNombre = categoria.Nombre
+    };
 
-        editando = new Categoria
-        {
-            Id = categoria.Id,
-            Nombre = categoria.Nombre,
-            CategoriaPadreId = categoria.CategoriaPadreId,
-            Orden = categoria.Orden,
-            PorcentajeObjetivo = categoria.PorcentajeObjetivo,
-            Tipo = categoria.Tipo
-        };
+    mensaje = "";
+}
 
-        mensaje = "";
-    }
 
-    private async Task GuardarEdicion()
-    {
-        if (editandoId == null)
-            return;
+private async Task GuardarEdicion()
+{
+    if (editandoId == null)
+        return;
 
-        await CategoriasService.GuardarCategoriaAsync(editando);
+    editando.EsAhorro = editando.Tipo == "Ahorro";
+    editando.EsInversion = editando.Tipo == "Inversion";
+    editando.ActivoNombre = editando.Nombre;
 
-        editandoId = null;
-        editando = new Categoria();
+    await CategoriasService.GuardarCategoriaAsync(editando);
 
-        await Cargar();
-        mensaje = "Categoría actualizada correctamente.";
-    }
+    editandoId = null;
+    editando = new Categoria();
 
+    await Cargar();
+    mensaje = "Categoría actualizada correctamente.";
+}
     private void CancelarEdicion()
     {
         editandoId = null;

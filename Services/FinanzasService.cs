@@ -28,50 +28,83 @@ public class FinanzasService
 
 public async Task<MesFinanciero> ObtenerOCrearMesAsync(string mesKey)
 {
-    var mes = await _db.MesesFinancieros
+    var mesExistente = await _db.MesesFinancieros
+        .AsNoTracking()
         .Include(x => x.Presupuestos)
         .ThenInclude(x => x.Categoria)
+        .ThenInclude(x => x.CategoriaPadre)
         .FirstOrDefaultAsync(x => x.MesKey == mesKey);
 
-    if (mes == null)
+    if (mesExistente == null)
     {
-        mes = new MesFinanciero
+        var nuevoMes = new MesFinanciero
         {
-            MesKey = mesKey
+            MesKey = mesKey,
+            Ingreso = 0,
+            EstaCerrado = false,
+            FechaCierre = null
         };
 
-        _db.MesesFinancieros.Add(mes);
+        _db.MesesFinancieros.Add(nuevoMes);
         await _db.SaveChangesAsync();
-    }
 
-    // Obtener subcategorías
-    var subCategorias = await _db.Categorias
-        .Where(x => x.CategoriaPadreId != null)
-        .ToListAsync();
+        var subCategorias = await _db.Categorias
+            .Where(x => x.CategoriaPadreId != null)
+            .ToListAsync();
 
-    // Verificar si falta alguna
-    foreach (var cat in subCategorias)
-    {
-        if (!mes.Presupuestos.Any(x => x.CategoriaId == cat.Id))
+        foreach (var cat in subCategorias)
         {
             _db.Presupuestos.Add(new PresupuestoCategoria
             {
-                MesFinancieroId = mes.Id,
+                MesFinancieroId = nuevoMes.Id,
                 CategoriaId = cat.Id,
                 Presupuesto = 0,
                 Real = 0
             });
         }
+
+        await _db.SaveChangesAsync();
+    }
+    else
+    {
+        var subCategorias = await _db.Categorias
+            .Where(x => x.CategoriaPadreId != null)
+            .ToListAsync();
+
+        var categoriasExistentes = mesExistente.Presupuestos
+            .Select(x => x.CategoriaId)
+            .ToHashSet();
+
+        bool hayNuevas = false;
+
+        foreach (var cat in subCategorias)
+        {
+            if (!categoriasExistentes.Contains(cat.Id))
+            {
+                _db.Presupuestos.Add(new PresupuestoCategoria
+                {
+                    MesFinancieroId = mesExistente.Id,
+                    CategoriaId = cat.Id,
+                    Presupuesto = 0,
+                    Real = 0
+                });
+
+                hayNuevas = true;
+            }
+        }
+
+        if (hayNuevas)
+            await _db.SaveChangesAsync();
     }
 
-    await _db.SaveChangesAsync();
-
     return await _db.MesesFinancieros
+        .AsNoTracking()
         .Include(x => x.Presupuestos)
         .ThenInclude(x => x.Categoria)
         .ThenInclude(x => x.CategoriaPadre)
-        .FirstAsync(x => x.Id == mes.Id);
+        .FirstAsync(x => x.MesKey == mesKey);
 }
+
     // -------------------------
     // GUARDAR MES
     // -------------------------
@@ -80,24 +113,73 @@ public async Task GuardarMesAsync(MesFinanciero mes)
 {
     var existente = await _db.MesesFinancieros
         .Include(x => x.Presupuestos)
+        .ThenInclude(x => x.Categoria)
         .FirstAsync(x => x.Id == mes.Id);
 
     existente.Ingreso = mes.Ingreso;
 
-    foreach (var presupuesto in mes.Presupuestos)
+    foreach (var presupuestoEditado in mes.Presupuestos)
     {
-        var existentePresupuesto = existente.Presupuestos
-            .FirstOrDefault(x => x.Id == presupuesto.Id);
+        var presupuestoDb = existente.Presupuestos
+            .FirstOrDefault(x => x.Id == presupuestoEditado.Id);
 
-        if (existentePresupuesto == null)
+        if (presupuestoDb == null)
             continue;
 
-        existentePresupuesto.Presupuesto = presupuesto.Presupuesto;
-        existentePresupuesto.Real = presupuesto.Real;
+        var realAnterior = presupuestoDb.Real;
+        var realNuevo = presupuestoEditado.Real;
+        var diferenciaReal = realNuevo - realAnterior;
+
+        presupuestoDb.Presupuesto = presupuestoEditado.Presupuesto;
+        presupuestoDb.Real = realNuevo;
+
+        if (diferenciaReal == 0)
+            continue;
+
+        // -------------------------
+        // SINCRONIZAR AHORROS
+        // -------------------------
+        if (presupuestoDb.Categoria.EsAhorro || presupuestoDb.Categoria.Tipo == "Ahorro")
+        {
+            var ahorro = await _db.Ahorros
+                .FirstOrDefaultAsync(x => x.CategoriaId == presupuestoDb.CategoriaId);
+
+            if (ahorro != null)
+            {
+                ahorro.ValorActual += diferenciaReal;
+
+                if (ahorro.ValorActual < 0)
+                    ahorro.ValorActual = 0;
+            }
+        }
+
+        // -------------------------
+        // SINCRONIZAR INVERSIONES
+        // -------------------------
+        if (presupuestoDb.Categoria.EsInversion || presupuestoDb.Categoria.Tipo == "Inversion")
+        {
+            var inversion = await _db.Inversiones
+                .FirstOrDefaultAsync(x => x.CategoriaId == presupuestoDb.CategoriaId);
+
+            if (inversion != null)
+            {
+                if (inversion.CapitalInicial == 0 && inversion.ValorActual == 0 && diferenciaReal > 0)
+                {
+                    inversion.CapitalInicial = diferenciaReal;
+                    inversion.FechaInicio = DateTime.Today;
+                }
+
+                inversion.ValorActual += diferenciaReal;
+
+                if (inversion.ValorActual < 0)
+                    inversion.ValorActual = 0;
+            }
+        }
     }
 
     await _db.SaveChangesAsync();
-}
+} 
+
     // -------------------------
     // CERRAR MES
     // -------------------------
@@ -209,69 +291,24 @@ public async Task GuardarMesAsync(MesFinanciero mes)
         return meses;
     }
 
-    public async Task InicializarCategoriasAsync()
+public async Task InicializarCategoriasAsync()
 {
     if (await _db.Categorias.AnyAsync())
         return;
 
-    // Categorías padre
-    var ingreso = new Categoria { Nombre = "Ingreso", Orden = 1 };
-    var casa = new Categoria { Nombre = "Casa", Orden = 2 };
-    var transporte = new Categoria { Nombre = "Transporte", Orden = 3 };
-    var deuda = new Categoria { Nombre = "Deuda", Orden = 4 };
     var ahorro = new Categoria { Nombre = "Ahorro e inversion", Orden = 5 };
-    var diversion = new Categoria { Nombre = "Diversion", Orden = 6 };
-    var restante = new Categoria { Nombre = "Restante", Orden = 7 };
+
+    _db.Categorias.Add(ahorro);
+
+    await _db.SaveChangesAsync();
 
     _db.Categorias.AddRange(
-        ingreso,
-        casa,
-        transporte,
-        deuda,
-        ahorro,
-        diversion,
-        restante
+
     );
 
     await _db.SaveChangesAsync();
-
-    // Subcategorías
-    var subcategorias = new List<Categoria>
-    {
-        new Categoria { Nombre = "Ingreso sueldo", CategoriaPadreId = ingreso.Id },
-
-        new Categoria { Nombre = "Casa", CategoriaPadreId = casa.Id },
-        new Categoria { Nombre = "Regalo mamá", CategoriaPadreId = casa.Id },
-        new Categoria { Nombre = "Mercado", CategoriaPadreId = casa.Id },
-        new Categoria { Nombre = "Regalo extra", CategoriaPadreId = casa.Id },
-
-        new Categoria { Nombre = "Transporte gasolina", CategoriaPadreId = transporte.Id },
-        new Categoria { Nombre = "Uber", CategoriaPadreId = transporte.Id },
-        new Categoria { Nombre = "Fondo mantenimiento carro", CategoriaPadreId = transporte.Id },
-
-        new Categoria { Nombre = "Carro", CategoriaPadreId = deuda.Id },
-        new Categoria { Nombre = "NU tarjeta", CategoriaPadreId = deuda.Id },
-        new Categoria { Nombre = "Rappi", CategoriaPadreId = deuda.Id },
-
-        new Categoria { Nombre = "Inversiones (FIC Tyba)", CategoriaPadreId = ahorro.Id },
-        new Categoria { Nombre = "Urgencias", CategoriaPadreId = ahorro.Id },
-        new Categoria { Nombre = "Urgencias mama", CategoriaPadreId = ahorro.Id },
-
-        new Categoria { Nombre = "Diversion", CategoriaPadreId = diversion.Id },
-
-        new Categoria { Nombre = "Hidra Andrea 1ero", CategoriaPadreId = ingreso.Id },
-        new Categoria { Nombre = "Pricesmart mamá", CategoriaPadreId = ingreso.Id },
-        new Categoria { Nombre = "Andrea Medicina Prepa 1ero", CategoriaPadreId = ingreso.Id },
-        new Categoria { Nombre = "Adriana Medicina Prepa", CategoriaPadreId = ingreso.Id },
-        new Categoria { Nombre = "Sillón Andrea (5 mes)", CategoriaPadreId = ingreso.Id },
-        new Categoria { Nombre = "Devolución arriendo", CategoriaPadreId = ingreso.Id },
-        new Categoria { Nombre = "Sillón mama (5 cuota)", CategoriaPadreId = ingreso.Id }
-    };
-
-    _db.Categorias.AddRange(subcategorias);
-
-    await _db.SaveChangesAsync();
 }
+
 // -------------------------
 // AHORROS
 // -------------------------

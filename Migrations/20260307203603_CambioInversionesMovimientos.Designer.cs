@@ -3,6 +3,7 @@ using System;
 using FinanzasApp.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinanzasApp.Migrations
 {
     [DbContext(typeof(FinanzasDbContext))]
-    partial class FinanzasDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260307203603_CambioInversionesMovimientos")]
+    partial class CambioInversionesMovimientos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
@@ -47,9 +50,6 @@ namespace FinanzasApp.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("CategoriaId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<decimal>("MetaObjetivo")
                         .HasColumnType("TEXT");
 
@@ -65,8 +65,6 @@ namespace FinanzasApp.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CategoriaId");
 
                     b.ToTable("Ahorros");
                 });
@@ -385,9 +383,6 @@ namespace FinanzasApp.Migrations
                     b.Property<decimal>("CapitalInicial")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("CategoriaId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("TEXT");
 
@@ -406,8 +401,6 @@ namespace FinanzasApp.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CategoriaId");
 
                     b.ToTable("Inversiones");
                 });
@@ -466,17 +459,6 @@ namespace FinanzasApp.Migrations
                     b.ToTable("Presupuestos");
                 });
 
-            modelBuilder.Entity("FinanzasApp.Models.AhorroMeta", b =>
-                {
-                    b.HasOne("FinanzasApp.Models.Categoria", "Categoria")
-                        .WithMany()
-                        .HasForeignKey("CategoriaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Categoria");
-                });
-
             modelBuilder.Entity("FinanzasApp.Models.Categoria", b =>
                 {
                     b.HasOne("FinanzasApp.Models.Categoria", "CategoriaPadre")
@@ -485,17 +467,6 @@ namespace FinanzasApp.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CategoriaPadre");
-                });
-
-            modelBuilder.Entity("FinanzasApp.Models.Inversion", b =>
-                {
-                    b.HasOne("FinanzasApp.Models.Categoria", "Categoria")
-                        .WithMany()
-                        .HasForeignKey("CategoriaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Categoria");
                 });
 
             modelBuilder.Entity("FinanzasApp.Models.PresupuestoCategoria", b =>
