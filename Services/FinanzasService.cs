@@ -128,6 +128,7 @@ public async Task GuardarMesAsync(MesFinanciero mes)
 
         var realAnterior = presupuestoDb.Real;
         var realNuevo = presupuestoEditado.Real;
+
         var diferenciaReal = realNuevo - realAnterior;
 
         presupuestoDb.Presupuesto = presupuestoEditado.Presupuesto;
@@ -137,9 +138,10 @@ public async Task GuardarMesAsync(MesFinanciero mes)
             continue;
 
         // -------------------------
-        // SINCRONIZAR AHORROS
+        // SUMAR A AHORROS
         // -------------------------
-        if (presupuestoDb.Categoria.EsAhorro || presupuestoDb.Categoria.Tipo == "Ahorro")
+
+        if (presupuestoDb.Categoria.EsAhorro)
         {
             var ahorro = await _db.Ahorros
                 .FirstOrDefaultAsync(x => x.CategoriaId == presupuestoDb.CategoriaId);
@@ -154,9 +156,10 @@ public async Task GuardarMesAsync(MesFinanciero mes)
         }
 
         // -------------------------
-        // SINCRONIZAR INVERSIONES
+        // SUMAR A INVERSIONES
         // -------------------------
-        if (presupuestoDb.Categoria.EsInversion || presupuestoDb.Categoria.Tipo == "Inversion")
+
+        if (presupuestoDb.Categoria.EsInversion)
         {
             var inversion = await _db.Inversiones
                 .FirstOrDefaultAsync(x => x.CategoriaId == presupuestoDb.CategoriaId);
@@ -178,7 +181,7 @@ public async Task GuardarMesAsync(MesFinanciero mes)
     }
 
     await _db.SaveChangesAsync();
-} 
+}
 
     // -------------------------
     // CERRAR MES

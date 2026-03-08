@@ -67,6 +67,7 @@
                                     <option value="Gasto">Gasto</option>
                                     <option value="Ahorro">Ahorro</option>
                                     <option value="Ingreso">Ingreso</option>
+                                    <option value="Inversion">Inversión</option>
                                     <option value="Deuda">Deuda</option>
                                 </select>
                             </div>
@@ -142,6 +143,7 @@
                                                     <option value="Gasto">Gasto</option>
                                                     <option value="Ahorro">Ahorro</option>
                                                     <option value="Ingreso">Ingreso</option>
+                                                    <option value="Inversion">Inversión</option>
                                                     <option value="Deuda">Deuda</option>
                                                 </select>
                                             </td>
@@ -223,30 +225,23 @@ private async Task NuevaSubcategoria(int padreId)
 {
     var padre = await CategoriasService.ObtenerPorIdAsync(padreId);
 
-    if (padre == null)
-        return;
-
-    bool esAhorro = padre.EsAhorro || padre.Tipo == "Ahorro";
-    bool esInversion = padre.EsInversion || padre.Tipo == "Inversion";
+    bool esAhorro = padre.Tipo == "Ahorro";
+    bool esInversion = padre.Tipo == "Inversion";
 
     var sub = new Categoria
     {
-        Nombre = "Nueva subcategoría",
+        Nombre = "Nueva inversión",
         CategoriaPadreId = padreId,
-        PorcentajeObjetivo = 0,
-        Orden = 1,
-        Tipo = esAhorro ? "Ahorro" : esInversion ? "Inversion" : padre.Tipo,
+        Tipo = esInversion ? "Inversion" : "Gasto",
         EsAhorro = esAhorro,
         EsInversion = esInversion,
-        ActivoNombre = "Nueva subcategoría"
+        Orden = 1
     };
 
     await CategoriasService.GuardarCategoriaAsync(sub);
+
     await Cargar();
-
-    mensaje = "Subcategoría creada.";
 }
-
 
 private void Editar(Categoria categoria)
 {
