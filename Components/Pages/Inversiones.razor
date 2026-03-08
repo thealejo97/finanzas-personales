@@ -53,19 +53,22 @@ else
 </div>
 
 
+
 <!-- AHORROS -->
 
 <div class="panel">
 
-<h3>Ahorros (liquidez)</h3>
+<h3>Ahorros</h3>
 
 <table class="budget-table">
 
 <thead>
 <tr>
 <th>Cuenta</th>
-<th>Tipo</th>
 <th>Valor</th>
+<th>EA</th>
+<th>Estimado</th>
+<th>Fecha inicio</th>
 <th>Meta</th>
 <th>Progreso</th>
 <th></th>
@@ -78,16 +81,40 @@ else
 {
 
 var porcentaje = FinanzasService.CalcularPorcentajeMetaAhorro(ahorro);
+var estimado = FinanzasService.CalcularValorEstimadoAhorro(ahorro);
 
 <tr>
 
 <td>@ahorro.Nombre</td>
 
-<td>@ahorro.Tipo</td>
+<td>
+<input type="number"
+class="table-input"
+@bind="ahorro.ValorActual"/>
+</td>
 
-<td>@MoneyFormatter.Formatear(ahorro.ValorActual)</td>
+<td>
+<input type="number"
+step="0.01"
+class="table-input"
+@bind="ahorro.TasaEA"/>
+</td>
 
-<td>@MoneyFormatter.Formatear(ahorro.MetaObjetivo)</td>
+<td>
+@MoneyFormatter.Formatear(estimado)
+</td>
+
+<td>
+<input type="date"
+class="table-input"
+@bind="ahorro.FechaInicio"/>
+</td>
+
+<td>
+<input type="number"
+class="table-input"
+@bind="ahorro.MetaObjetivo"/>
+</td>
 
 <td>
 
@@ -101,11 +128,14 @@ var porcentaje = FinanzasService.CalcularPorcentajeMetaAhorro(ahorro);
 
 <td>
 
+<button class="btn-soft"
+@onclick="() => GuardarAhorroEditado(ahorro)">
+Guardar
+</button>
+
 <button class="btn-danger"
-        @onclick="() => EliminarAhorro(ahorro.Id)">
-
+@onclick="() => EliminarAhorro(ahorro.Id)">
 Eliminar
-
 </button>
 
 </td>
@@ -136,8 +166,9 @@ Eliminar
 <th>Tipo</th>
 <th>Capital inicial</th>
 <th>Valor actual</th>
+<th>EA</th>
 <th>Estimado</th>
-<th>Diferencia</th>
+<th>Fecha inicio</th>
 <th></th>
 </tr>
 </thead>
@@ -148,44 +179,61 @@ Eliminar
 {
 
 var estimado = FinanzasService.CalcularValorEstimado(inv);
-var diferencia = FinanzasService.CalcularDiferenciaRealVsEstimado(inv);
 
 <tr>
 
 <td>@inv.Nombre</td>
 
-<td>@inv.Tipo</td>
-
-<td>@MoneyFormatter.Formatear(inv.CapitalInicial)</td>
-
-<td>@MoneyFormatter.Formatear(inv.ValorActual)</td>
-
-<td>@MoneyFormatter.Formatear(estimado)</td>
+<td>
+<select class="table-input" @bind="inv.Tipo">
+<option>CDT</option>
+<option>FIC</option>
+<option>Acción</option>
+<option>ETF</option>
+<option>Bonos</option>
+<option>Cripto</option>
+</select>
+</td>
 
 <td>
+<input type="number"
+class="table-input"
+@bind="inv.CapitalInicial"/>
+</td>
 
-@if (diferencia >= 0)
-{
-<span style="color:green">
-+@MoneyFormatter.Formatear(diferencia)
-</span>
-}
-else
-{
-<span style="color:red">
-@MoneyFormatter.Formatear(diferencia)
-</span>
-}
+<td>
+<input type="number"
+class="table-input"
+@bind="inv.ValorActual"/>
+</td>
 
+<td>
+<input type="number"
+step="0.01"
+class="table-input"
+@bind="inv.TasaEA"/>
+</td>
+
+<td>
+@MoneyFormatter.Formatear(estimado)
+</td>
+
+<td>
+<input type="date"
+class="table-input"
+@bind="inv.FechaInicio"/>
 </td>
 
 <td>
 
+<button class="btn-soft"
+@onclick="() => GuardarInversionEditada(inv)">
+Guardar
+</button>
+
 <button class="btn-danger"
-        @onclick="() => EliminarInversion(inv.Id)">
-
+@onclick="() => EliminarInversion(inv.Id)">
 Eliminar
-
 </button>
 
 </td>
@@ -213,15 +261,15 @@ Eliminar
 <div class="field">
 <label>Nombre</label>
 <input class="input"
-       placeholder="Ej: Cajita Nubank"
-       @bind="nuevoAhorro.Nombre"/>
+placeholder="Ej: Cajita Nubank"
+@bind="nuevoAhorro.Nombre"/>
 </div>
 
 <div class="field">
 <label>Tipo</label>
 
 <select class="input"
-        @bind="nuevoAhorro.Tipo">
+@bind="nuevoAhorro.Tipo">
 
 <option>Cajita</option>
 <option>Cuenta alto rendimiento</option>
@@ -236,15 +284,30 @@ Eliminar
 <div class="field">
 <label>Valor actual</label>
 <input type="number"
-       class="input"
-       @bind="nuevoAhorro.ValorActual"/>
+class="input"
+@bind="nuevoAhorro.ValorActual"/>
 </div>
 
 <div class="field">
 <label>Meta objetivo</label>
 <input type="number"
-       class="input"
-       @bind="nuevoAhorro.MetaObjetivo"/>
+class="input"
+@bind="nuevoAhorro.MetaObjetivo"/>
+</div>
+
+<div class="field">
+<label>Tasa EA (%)</label>
+<input type="number"
+step="0.01"
+class="input"
+@bind="nuevoAhorro.TasaEA"/>
+</div>
+
+<div class="field">
+<label>Fecha inicio</label>
+<input type="date"
+class="input"
+@bind="nuevoAhorro.FechaInicio"/>
 </div>
 
 </div>
@@ -252,10 +315,8 @@ Eliminar
 <br/>
 
 <button class="btn-primary"
-        @onclick="GuardarAhorro">
-
+@onclick="GuardarAhorro">
 Guardar ahorro
-
 </button>
 
 </div>
@@ -273,15 +334,15 @@ Guardar ahorro
 <div class="field">
 <label>Nombre</label>
 <input class="input"
-       placeholder="Ej: FIC Tyba"
-       @bind="nuevaInversion.Nombre"/>
+placeholder="Ej: FIC Tyba"
+@bind="nuevaInversion.Nombre"/>
 </div>
 
 <div class="field">
 <label>Tipo</label>
 
 <select class="input"
-        @bind="nuevaInversion.Tipo">
+@bind="nuevaInversion.Tipo">
 
 <option>CDT</option>
 <option>FIC</option>
@@ -297,30 +358,30 @@ Guardar ahorro
 <div class="field">
 <label>Capital inicial</label>
 <input type="number"
-       class="input"
-       @bind="nuevaInversion.CapitalInicial"/>
+class="input"
+@bind="nuevaInversion.CapitalInicial"/>
 </div>
 
 <div class="field">
 <label>Valor actual</label>
 <input type="number"
-       class="input"
-       @bind="nuevaInversion.ValorActual"/>
+class="input"
+@bind="nuevaInversion.ValorActual"/>
 </div>
 
 <div class="field">
 <label>Tasa EA (%)</label>
 <input type="number"
-       step="0.01"
-       class="input"
-       @bind="nuevaInversion.TasaEA"/>
+step="0.01"
+class="input"
+@bind="nuevaInversion.TasaEA"/>
 </div>
 
 <div class="field">
 <label>Fecha inicio</label>
 <input type="date"
-       class="input"
-       @bind="nuevaInversion.FechaInicio"/>
+class="input"
+@bind="nuevaInversion.FechaInicio"/>
 </div>
 
 </div>
@@ -328,10 +389,8 @@ Guardar ahorro
 <br/>
 
 <button class="btn-primary"
-        @onclick="GuardarInversion">
-
+@onclick="GuardarInversion">
 Guardar inversión
-
 </button>
 
 </div>
@@ -349,7 +408,8 @@ List<Inversion> inversiones = new();
 
 AhorroMeta nuevoAhorro = new()
 {
-Tipo = "Cajita"
+Tipo = "Cajita",
+FechaInicio = DateTime.Today
 };
 
 Inversion nuevaInversion = new()
@@ -389,7 +449,8 @@ await FinanzasService.GuardarAhorroAsync(nuevoAhorro);
 
 nuevoAhorro = new AhorroMeta
 {
-Tipo = "Cajita"
+Tipo = "Cajita",
+FechaInicio = DateTime.Today
 };
 
 await CargarTodo();
@@ -412,6 +473,18 @@ FechaInicio = DateTime.Today
 
 await CargarTodo();
 
+}
+
+async Task GuardarAhorroEditado(AhorroMeta ahorro)
+{
+await FinanzasService.GuardarAhorroAsync(ahorro);
+await CargarTodo();
+}
+
+async Task GuardarInversionEditada(Inversion inv)
+{
+await FinanzasService.GuardarInversionAsync(inv);
+await CargarTodo();
 }
 
 decimal PorcentajeAhorros()

@@ -3,9 +3,7 @@ public class AhorroMeta
 {
     public int Id { get; set; }
 
-    public int CategoriaId { get; set; }
-
-    public Categoria Categoria { get; set; } = null!;
+    public int? CategoriaId { get; set; }
 
     public string Nombre { get; set; } = "";
 
@@ -14,4 +12,8 @@ public class AhorroMeta
     public decimal ValorActual { get; set; }
 
     public decimal MetaObjetivo { get; set; }
+
+    public decimal TasaEA { get; set; }   // NUEVO
+
+    public DateTime FechaInicio { get; set; } = DateTime.Today;
 }

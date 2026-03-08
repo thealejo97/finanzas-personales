@@ -403,16 +403,18 @@ public async Task<decimal> ObtenerTotalInversionesAsync()
 }
 public decimal CalcularValorEstimado(Inversion inv)
 {
-    if (inv.TasaEA <= 0)
-        return inv.CapitalInicial;
+    if (inv.TasaEA <= 0 || inv.CapitalInicial <= 0)
+        return inv.ValorActual;
 
     var dias = (DateTime.Today - inv.FechaInicio).TotalDays;
 
-    var tasaDiaria = Math.Pow(1 + (double)(inv.TasaEA / 100), 1.0 / 365) - 1;
+    var años = dias / 365;
 
-    var valor = inv.CapitalInicial * (decimal)Math.Pow(1 + tasaDiaria, dias);
+    var tasa = inv.TasaEA / 100m;
 
-    return decimal.Round(valor, 0);
+    var valor = inv.CapitalInicial * (decimal)Math.Pow((double)(1 + tasa), (double)años);
+
+    return Math.Round(valor, 0);
 }
 
 
@@ -442,6 +444,28 @@ public async Task EliminarAhorroAsync(int id)
         _db.Ahorros.Remove(ahorro);
         await _db.SaveChangesAsync();
     }
+}
+
+public decimal DiferenciaAhorro(AhorroMeta ahorro)
+{
+    var estimado = CalcularValorEstimadoAhorro(ahorro);
+
+    return ahorro.ValorActual - estimado;
+}
+public decimal CalcularValorEstimadoAhorro(AhorroMeta ahorro)
+{
+    if (ahorro.TasaEA <= 0 || ahorro.ValorActual <= 0)
+        return ahorro.ValorActual;
+
+    var dias = (DateTime.Today - ahorro.FechaInicio).TotalDays;
+
+    var años = dias / 365;
+
+    var tasa = ahorro.TasaEA / 100m;
+
+    var valor = ahorro.ValorActual * (decimal)Math.Pow((double)(1 + tasa), (double)años);
+
+    return Math.Round(valor, 0);
 }
 
 }
